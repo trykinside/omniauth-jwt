@@ -1,5 +1,13 @@
 require 'spec_helper'
 
+shared_examples 'request phase' do
+  it 'should redirect to the configured login url' do
+    get '/auth/jwt'
+    expect(last_response.status).to eq(302)
+    expect(last_response.headers['Location']).to eq('http://example.com/login')
+  end
+end
+
 describe OmniAuth::Strategies::JWT do
   let(:response_json){ MultiJson.load(last_response.body) }
 
@@ -16,6 +24,8 @@ describe OmniAuth::Strategies::JWT do
         b.run lambda{|env| [200, {}, [(env['omniauth.auth'] || {}).to_json]]}
       end
     }
+
+    it_behaves_like "request phase"
   end
 
   context "default arguments" do
@@ -30,14 +40,8 @@ describe OmniAuth::Strategies::JWT do
       end
     }
     
-    context 'request phase' do
-      it 'should redirect to the configured login url' do
-        get '/auth/jwt'
-        expect(last_response.status).to eq(302)
-        expect(last_response.headers['Location']).to eq('http://example.com/login')
-      end
-    end
-    
+    it_behaves_like "request phase"
+
     context 'callback phase' do
       it 'should decode the response' do
         encoded = JWT.encode({name: 'Bob', email: 'steve@example.com'}, 'imasecret')
