@@ -84,19 +84,19 @@ describe OmniAuth::Strategies::JWT do
         let(:args){ ['imasecret', {auth_url: 'http://example.com/login', valid_within: 300}] }
         
         it 'should work if the iat key is within the time window' do
-          encoded = JWT.encode({name: 'Ted', email: 'ted@example.com', iat: Time.now.to_i}, 'imasecret')
+          encoded = encode({name: 'Ted', email: 'ted@example.com', iat: Time.now.to_i})
           get '/auth/jwt/callback?jwt=' + encoded
           expect(last_response.status).to eq(200)
         end
         
         it 'should not work if the iat key is outside the time window' do
-          encoded = JWT.encode({name: 'Ted', email: 'ted@example.com', iat: Time.now.to_i + 500}, 'imasecret')
+          encoded = encode({name: 'Ted', email: 'ted@example.com', iat: Time.now.to_i + 500})
           get '/auth/jwt/callback?jwt=' + encoded
           expect(last_response.status).to eq(302)
         end
         
         it 'should not work if the iat key is missing' do
-          encoded = JWT.encode({name: 'Ted', email: 'ted@example.com'}, 'imasecret')
+          encoded = encode({name: 'Ted', email: 'ted@example.com'})
           get '/auth/jwt/callback?jwt=' + encoded
           expect(last_response.status).to eq(302)
         end
