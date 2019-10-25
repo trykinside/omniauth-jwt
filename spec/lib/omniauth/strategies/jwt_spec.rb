@@ -9,26 +9,23 @@ shared_examples 'request phase' do
 end
 
 shared_examples 'callback phase' do
-  context 'callback phase' do
-    it 'should decode the response' do
-      encoded = encode({name: 'Bob', email: 'steve@example.com'})
+  it 'should decode the response' do
+    encoded = encode({name: 'Bob', email: 'steve@example.com'})
 
-      get '/auth/jwt/callback?jwt=' + encoded
-      expect(response_json["info"]["email"]).to eq("steve@example.com")
-    end
+    get '/auth/jwt/callback?jwt=' + encoded
+    expect(response_json["info"]["email"]).to eq("steve@example.com")
+  end
 
-    it 'should not work without required fields' do
-      encoded = encode({name: 'Steve'})
-      get '/auth/jwt/callback?jwt=' + encoded
-      expect(last_response.status).to eq(302)
-    end
-    
-    it 'should assign the uid' do
-      encoded = encode({name: 'Steve', email: 'dude@awesome.com'})
-      get '/auth/jwt/callback?jwt=' + encoded
-      expect(response_json["uid"]).to eq('dude@awesome.com')
-    end
-    
+  it 'should not work without required fields' do
+    encoded = encode({name: 'Steve'})
+    get '/auth/jwt/callback?jwt=' + encoded
+    expect(last_response.status).to eq(302)
+  end
+
+  it 'should assign the uid' do
+    encoded = encode({name: 'Steve', email: 'dude@awesome.com'})
+    get '/auth/jwt/callback?jwt=' + encoded
+    expect(response_json["uid"]).to eq('dude@awesome.com')
   end
 end
 
