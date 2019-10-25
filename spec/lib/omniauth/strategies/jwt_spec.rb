@@ -98,15 +98,10 @@ describe OmniAuth::Strategies::JWT do
     
     it_behaves_like "request phase"
 
-    context 'callback phase' do
-      it_behaves_like 'callback phase'
-      
-      context 'with a :valid_within option set' do
-        
-        it_behaves_like 'with a :valid_within option set' do
-          let(:args){ ['imasecret', {auth_url: 'http://example.com/login', valid_within: 300}] }
-        end
-      end
+    it_behaves_like 'callback phase'
+    
+    it_behaves_like 'with a :valid_within option set' do
+      let(:args){ ['imasecret', {auth_url: 'http://example.com/login', valid_within: 300}] }
     end
   end
 end
