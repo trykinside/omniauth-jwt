@@ -3,6 +3,21 @@ require 'spec_helper'
 describe OmniAuth::Strategies::JWT do
   let(:response_json){ MultiJson.load(last_response.body) }
 
+  context "RS256 algorithm" do
+    let(:secret_key) { OpenSSL::PKey::RSA.new(file_fixture("private_key.pem").read) }
+
+    let(:args) { [secret_key, {auth_url: 'http://example.com/login', algorithm: 'RS256'}]}
+
+    let(:app){
+      the_args = args
+      Rack::Builder.new do |b|
+        b.use Rack::Session::Cookie, secret: 'sekrit'
+        b.use OmniAuth::Strategies::JWT, *the_args
+        b.run lambda{|env| [200, {}, [(env['omniauth.auth'] || {}).to_json]]}
+      end
+    }
+  end
+
   context "default arguments" do
     let(:args){ ['imasecret', {auth_url: 'http://example.com/login'}] }
     
