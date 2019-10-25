@@ -1,6 +1,7 @@
 $:.unshift File.dirname(__FILE__) + "/../lib"
 require 'rack/test'
 
+require 'pry'
 require 'omniauth/jwt'
 require 'multi_json'
 
