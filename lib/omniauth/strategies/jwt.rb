@@ -37,6 +37,8 @@ module OmniAuth
       
       def callback_phase
         super
+      rescue ::JWT::ExpiredSignature => e
+        fail! :claim_invalid, e
       rescue ::JWT::InvalidIatError => e
         fail! :claim_invalid, e
       rescue ClaimInvalid => e

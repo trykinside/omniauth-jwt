@@ -8,6 +8,20 @@ shared_examples 'request phase' do
   end
 end
 
+shared_examples 'handle expiration claim' do
+  it 'should work if the exp key is within the time window' do
+    encoded = encode({name: 'Ted', email: 'ted@example.com', exp: Time.now.to_i + 500})
+    get '/auth/jwt/callback?jwt=' + encoded
+    expect(last_response.status).to eq(200)
+  end
+  
+  it 'should not work if the iat key is outside the time window' do
+    encoded = encode({name: 'Ted', email: 'ted@example.com', exp: Time.now.to_i - 500})
+    get '/auth/jwt/callback?jwt=' + encoded
+    expect(last_response.status).to eq(302)
+  end
+end
+
 shared_examples 'with a :valid_within option set' do
   it 'should work if the iat key is within the time window' do
     encoded = encode({name: 'Ted', email: 'ted@example.com', iat: Time.now.to_i})
@@ -78,6 +92,8 @@ describe OmniAuth::Strategies::JWT do
     it_behaves_like 'with a :valid_within option set' do
       let(:args){ [public_key, {auth_url: 'http://example.com/login', algorithm: 'RS256', valid_within: 300}] }
     end
+
+    it_behaves_like 'handle expiration claim'
   end
 
   context "default arguments" do
@@ -103,5 +119,7 @@ describe OmniAuth::Strategies::JWT do
     it_behaves_like 'with a :valid_within option set' do
       let(:args){ ['imasecret', {auth_url: 'http://example.com/login', valid_within: 300}] }
     end
+
+    it_behaves_like 'handle expiration claim'
   end
 end
