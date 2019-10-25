@@ -41,8 +41,8 @@ describe OmniAuth::Strategies::JWT do
 
     let(:args) { [public_key, {auth_url: 'http://example.com/login', algorithm: 'RS256'}]}
 
-    def encode(claim)
-      JWT.encode(claim, secret_key,  'RS256')
+    def encode(claim, headers={})
+      JWT.encode(claim, secret_key,  'RS256', headers)
     end
 
     let(:app){
@@ -62,8 +62,8 @@ describe OmniAuth::Strategies::JWT do
   context "default arguments" do
     let(:args){ ['imasecret', {auth_url: 'http://example.com/login'}] }
     
-    def encode(claim)
-      JWT.encode(claim, 'imasecret')
+    def encode(claim, headers={})
+      JWT.encode(claim, 'imasecret', 'HS256', headers)
     end
 
     let(:app){
