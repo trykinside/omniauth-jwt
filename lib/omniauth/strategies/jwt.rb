@@ -17,13 +17,14 @@ module OmniAuth
       option :info_map, {"name" => "name", "email" => "email"}
       option :auth_url, nil
       option :valid_within, nil
+      option :verify_jit, false
       
       def request_phase
         redirect options.auth_url
       end
       
       def decoded
-        @decoded ||= ::JWT.decode(request.params['jwt'], options.secret, true, {algorithm: options.algorithm, verify_iat: !!options.valid_within}).reduce(&:merge)
+        @decoded ||= ::JWT.decode(request.params['jwt'], options.secret, true, {algorithm: options.algorithm, verify_iat: !!options.valid_within, verify_jti: options.verify_jti}).reduce(&:merge)
 
 
         (options.required_claims || []).each do |field|
@@ -37,6 +38,8 @@ module OmniAuth
       
       def callback_phase
         super
+      rescue ::JWT::InvalidJtiError => e
+        fail! :claim_invalid, e
       rescue ::JWT::ExpiredSignature => e
         fail! :claim_invalid, e
       rescue ::JWT::InvalidIatError => e

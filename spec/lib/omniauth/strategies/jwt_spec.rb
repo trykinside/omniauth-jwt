@@ -8,6 +8,26 @@ shared_examples 'request phase' do
   end
 end
 
+shared_examples 'handle jwt id claim, with a :verify_jti option set' do
+  it 'should work if the jti key is unused' do
+    encoded = encode({name: 'Ted', email: 'ted@example.com', jti: 'good'})
+    get '/auth/jwt/callback?jwt=' + encoded
+    expect(last_response.status).to eq(200)
+  end
+  
+  it 'should not work if the jti  key is missing' do
+    encoded = encode({name: 'Ted', email: 'ted@example.com'})
+    get '/auth/jwt/callback?jwt=' + encoded
+    expect(last_response.status).to eq(302)
+  end
+
+  it 'should not work if the jti  key is used' do
+    encoded = encode({name: 'Ted', email: 'ted@example.com', jti: 'bad'})
+    get '/auth/jwt/callback?jwt=' + encoded
+    expect(last_response.status).to eq(302)
+  end
+end
+
 shared_examples 'handle expiration claim' do
   it 'should work if the exp key is within the time window' do
     encoded = encode({name: 'Ted', email: 'ted@example.com', exp: Time.now.to_i + 500})
@@ -94,6 +114,13 @@ describe OmniAuth::Strategies::JWT do
     end
 
     it_behaves_like 'handle expiration claim'
+
+    it_behaves_like 'handle jwt id claim, with a :verify_jti option set' do
+      let(:args){ [public_key, {
+        auth_url: 'http://example.com/login',
+        algorithm: 'RS256',
+        verify_jti: -> (jti,payload) { jti == 'good'}}] }
+    end
   end
 
   context "default arguments" do
@@ -121,5 +148,11 @@ describe OmniAuth::Strategies::JWT do
     end
 
     it_behaves_like 'handle expiration claim'
+
+    it_behaves_like 'handle jwt id claim, with a :verify_jti option set' do
+      let(:args){ ['imasecret', {
+        auth_url: 'http://example.com/login',
+        verify_jti: -> (jti,payload) { jti == 'good'}}] }
+    end
   end
 end
