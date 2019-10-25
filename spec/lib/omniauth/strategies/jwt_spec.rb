@@ -8,6 +8,30 @@ shared_examples 'request phase' do
   end
 end
 
+shared_examples 'callback phase' do
+  context 'callback phase' do
+    it 'should decode the response' do
+      encoded = encode({name: 'Bob', email: 'steve@example.com'})
+
+      get '/auth/jwt/callback?jwt=' + encoded
+      expect(response_json["info"]["email"]).to eq("steve@example.com")
+    end
+
+    it 'should not work without required fields' do
+      encoded = encode({name: 'Steve'})
+      get '/auth/jwt/callback?jwt=' + encoded
+      expect(last_response.status).to eq(302)
+    end
+    
+    it 'should assign the uid' do
+      encoded = encode({name: 'Steve', email: 'dude@awesome.com'})
+      get '/auth/jwt/callback?jwt=' + encoded
+      expect(response_json["uid"]).to eq('dude@awesome.com')
+    end
+    
+  end
+end
+
 describe OmniAuth::Strategies::JWT do
   let(:response_json){ MultiJson.load(last_response.body) }
 
@@ -17,6 +41,10 @@ describe OmniAuth::Strategies::JWT do
 
     let(:args) { [public_key, {auth_url: 'http://example.com/login', algorithm: 'RS256'}]}
 
+    def encode(claim)
+      JWT.encode(claim, secret_key,  'RS256')
+    end
+
     let(:app){
       the_args = args
       Rack::Builder.new do |b|
@@ -28,19 +56,16 @@ describe OmniAuth::Strategies::JWT do
 
     it_behaves_like "request phase"
 
-    context 'callback phase' do
-      it 'should decode the response' do
-        encoded = JWT.encode({name: 'Bob', email: 'steve@example.com'}, secret_key,  'RS256')
-
-        get '/auth/jwt/callback?jwt=' + encoded
-        expect(response_json["info"]["email"]).to eq("steve@example.com")
-      end
-    end
+    it_behaves_like 'callback phase'
   end
 
   context "default arguments" do
     let(:args){ ['imasecret', {auth_url: 'http://example.com/login'}] }
     
+    def encode(claim)
+      JWT.encode(claim, 'imasecret')
+    end
+
     let(:app){
       the_args = args
       Rack::Builder.new do |b|
@@ -53,23 +78,7 @@ describe OmniAuth::Strategies::JWT do
     it_behaves_like "request phase"
 
     context 'callback phase' do
-      it 'should decode the response' do
-        encoded = JWT.encode({name: 'Bob', email: 'steve@example.com'}, 'imasecret')
-        get '/auth/jwt/callback?jwt=' + encoded
-        expect(response_json["info"]["email"]).to eq("steve@example.com")
-      end
-      
-      it 'should not work without required fields' do
-        encoded = JWT.encode({name: 'Steve'}, 'imasecret')
-        get '/auth/jwt/callback?jwt=' + encoded
-        expect(last_response.status).to eq(302)
-      end
-      
-      it 'should assign the uid' do
-        encoded = JWT.encode({name: 'Steve', email: 'dude@awesome.com'}, 'imasecret')
-        get '/auth/jwt/callback?jwt=' + encoded
-        expect(response_json["uid"]).to eq('dude@awesome.com')
-      end
+      it_behaves_like 'callback phase'
       
       context 'with a :valid_within option set' do
         let(:args){ ['imasecret', {auth_url: 'http://example.com/login', valid_within: 300}] }
