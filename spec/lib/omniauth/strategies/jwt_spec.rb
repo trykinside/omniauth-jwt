@@ -13,8 +13,9 @@ describe OmniAuth::Strategies::JWT do
 
   context "RS256 algorithm" do
     let(:secret_key) { OpenSSL::PKey::RSA.new(file_fixture("private_key.pem").read) }
+    let(:public_key) { secret_key.public_key }
 
-    let(:args) { [secret_key, {auth_url: 'http://example.com/login', algorithm: 'RS256'}]}
+    let(:args) { [public_key, {auth_url: 'http://example.com/login', algorithm: 'RS256'}]}
 
     let(:app){
       the_args = args
@@ -26,6 +27,15 @@ describe OmniAuth::Strategies::JWT do
     }
 
     it_behaves_like "request phase"
+
+    context 'callback phase' do
+      it 'should decode the response' do
+        encoded = JWT.encode({name: 'Bob', email: 'steve@example.com'}, secret_key,  'RS256')
+
+        get '/auth/jwt/callback?jwt=' + encoded
+        expect(response_json["info"]["email"]).to eq("steve@example.com")
+      end
+    end
   end
 
   context "default arguments" do
