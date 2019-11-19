@@ -76,6 +76,12 @@ shared_examples 'callback phase' do
     expect(last_response.status).to eq(302)
   end
 
+  it 'should not work if the secrets do not match' do
+    encoded = encode({name: 'Steve', email: 'steve@example.com'}, key: alt_secret)
+    get '/auth/jwt/callback?jwt=' + encoded
+    expect(last_response.status).to eq(302)
+  end
+
   it 'should assign the uid' do
     encoded = encode({name: 'Steve', email: 'dude@awesome.com'})
     get '/auth/jwt/callback?jwt=' + encoded
@@ -88,12 +94,13 @@ describe OmniAuth::Strategies::JWT do
 
   context "RS256 algorithm" do
     let(:secret_key) { OpenSSL::PKey::RSA.new(file_fixture("private_key.pem").read) }
+    let(:alt_secret) { OpenSSL::PKey::RSA.new(file_fixture("alt_secret.pem").read) }
     let(:public_key) { secret_key.public_key }
 
     let(:args) { [public_key, {auth_url: 'http://example.com/login', algorithm: 'RS256'}]}
 
-    def encode(claim, headers={})
-      JWT.encode(claim, secret_key,  'RS256', headers)
+    def encode(claim, key: secret_key, **headers)
+      JWT.encode(claim, key,  'RS256', headers)
     end
 
     let(:app){
@@ -124,10 +131,13 @@ describe OmniAuth::Strategies::JWT do
   end
 
   context "default arguments" do
-    let(:args){ ['imasecret', {auth_url: 'http://example.com/login'}] }
+    let(:secret_key) { 'imasecret' }
+    let(:alt_secret) { 'badboi' }
+
+    let(:args){ [secret_key, {auth_url: 'http://example.com/login'}] }
     
-    def encode(claim, headers={})
-      JWT.encode(claim, 'imasecret', 'HS256', headers)
+    def encode(claim, key: secret_key, **headers)
+      JWT.encode(claim, key, 'HS256', headers)
     end
 
     let(:app){
@@ -144,13 +154,13 @@ describe OmniAuth::Strategies::JWT do
     it_behaves_like 'callback phase'
     
     it_behaves_like 'with a :valid_within option set' do
-      let(:args){ ['imasecret', {auth_url: 'http://example.com/login', valid_within: 300}] }
+      let(:args){ [secret_key, {auth_url: 'http://example.com/login', valid_within: 300}] }
     end
 
     it_behaves_like 'handle expiration claim'
 
     it_behaves_like 'handle jwt id claim, with a :verify_jti option set' do
-      let(:args){ ['imasecret', {
+      let(:args){ [secret_key, {
         auth_url: 'http://example.com/login',
         verify_jti: -> (jti,payload) { jti == 'good'}}] }
     end
